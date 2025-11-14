@@ -1,3 +1,13 @@
+:root {
+  --primary: #fa2851; /* pink-red */
+  --accent: #ffc107; /* amber */
+  --dark: #202020; /* near-black */
+  --white: #ffffff;
+  --muted: #f4f5f7;
+  --card-shadow: rgba(32, 32, 32, 0.06);
+  --muted-text: #6b6b6b;
+}
+
 /* ----------------------------- Global ----------------------------- */
 body {
   margin: 0;
@@ -6,8 +16,8 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background: #f6f7fb;
-  color: #111;
+  background: linear-gradient(180deg, #fffafc 0%, var(--muted) 100%);
+  color: var(--dark);
 }
 
 code {
@@ -31,9 +41,10 @@ code {
   align-items: center;
   justify-content: space-between;
   padding: 12px 20px;
-  background: white;
+  background: var(--white);
   border-radius: 8px;
-  box-shadow: 0 2px 6px rgba(20, 20, 30, 0.06);
+  box-shadow: 0 2px 6px var(--card-shadow);
+  border-left: 6px solid var(--primary);
 }
 
 .main {
@@ -41,11 +52,12 @@ code {
 }
 
 .card {
-  background: white;
+  background: var(--white);
   border-radius: 8px;
   padding: 12px;
-  box-shadow: 0 1px 4px rgba(20, 20, 30, 0.04);
+  box-shadow: 0 1px 4px var(--card-shadow);
   margin-bottom: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.03);
 }
 
 /* ----------------------------- Header ----------------------------- */
@@ -59,15 +71,30 @@ code {
   align-items: center;
   gap: 10px;
   font-weight: 700;
+  color: var(--dark);
 }
 .brand svg {
   font-size: 22px;
+  color: var(--primary);
 }
+.brand .brand-title {
+  font-size: 14px;
+}
+.brand .brand-sub {
+  font-size: 11px;
+  color: var(--muted-text);
+}
+
 .search {
   padding: 8px 12px;
   border-radius: 20px;
-  border: 1px solid #e6e8eb;
+  border: 1px solid rgba(0, 0, 0, 0.06);
   width: 360px;
+  background: linear-gradient(
+    90deg,
+    rgba(250, 40, 81, 0.03),
+    rgba(255, 193, 7, 0.02)
+  );
 }
 
 .nav-links {
@@ -79,6 +106,27 @@ code {
   padding: 8px 12px;
   border-radius: 6px;
   cursor: pointer;
+  color: var(--dark);
+}
+
+/* button styles */
+.btn {
+  padding: 8px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  border: none;
+}
+.btn-primary {
+  background: var(--primary);
+  color: var(--white);
+}
+.btn-ghost {
+  background: transparent;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+}
+.btn-accent {
+  background: var(--accent);
+  color: var(--dark);
 }
 
 /* ----------------------------- Sidebar ----------------------------- */
@@ -93,9 +141,15 @@ code {
   cursor: pointer;
 }
 .subreddit-badge {
-  background: #eef2ff;
+  background: linear-gradient(
+    90deg,
+    rgba(250, 40, 81, 0.08),
+    rgba(255, 193, 7, 0.06)
+  );
   padding: 6px 10px;
   border-radius: 999px;
+  color: var(--dark);
+  font-weight: 600;
 }
 
 /* ----------------------------- Post Card ----------------------------- */
@@ -114,6 +168,17 @@ code {
 .vote-btn {
   cursor: pointer;
   user-select: none;
+  padding: 6px;
+  border-radius: 6px;
+}
+.vote-btn:hover {
+  background: rgba(0, 0, 0, 0.03);
+}
+.vote-btn.up {
+  color: var(--primary);
+}
+.vote-btn.down {
+  color: #666;
 }
 .post-body {
   flex: 1;
@@ -123,11 +188,12 @@ code {
   gap: 8px;
   align-items: center;
   font-size: 13px;
-  color: #555;
+  color: var(--muted-text);
 }
 .post-title {
   font-size: 16px;
   margin: 6px 0;
+  color: var(--dark);
 }
 .post-image {
   max-width: 100%;
@@ -135,8 +201,14 @@ code {
   margin-top: 8px;
 }
 .post-link {
-  color: #0079d3;
+  color: var(--primary);
   text-decoration: none;
+  font-weight: 600;
+}
+
+/* highlight card for popular posts */
+.card.popular {
+  border-left: 4px solid var(--accent);
 }
 
 /* ----------------------------- Forms ----------------------------- */
@@ -150,7 +222,7 @@ code {
 textarea {
   padding: 8px;
   border-radius: 6px;
-  border: 1px solid #e6e8eb;
+  border: 1px solid rgba(0, 0, 0, 0.06);
 }
 .textarea {
   min-height: 100px;
@@ -162,19 +234,24 @@ textarea {
   border: none;
 }
 .btn-primary {
-  background: #0079d3;
-  color: white;
+  background: var(--primary);
+  color: var(--white);
 }
 .btn-ghost {
   background: transparent;
-  border: 1px solid #e6e8eb;
+  border: 1px solid rgba(0, 0, 0, 0.06);
 }
 
-/* ----------------------------- Footer ----------------------------- */
+/* links */
+a {
+  color: var(--primary);
+}
+
+/* subtle footer */
 .footer {
   text-align: center;
   padding: 12px;
-  color: #666;
+  color: var(--muted-text);
 }
 
 /* responsive small screens */
