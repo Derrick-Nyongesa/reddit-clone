@@ -7,6 +7,7 @@ import Profile from "./pages/Profile";
 import Header from "./components/Header";
 import Sidebar from "./components/Sidebar";
 import Authentication from "./pages/Authentication";
+import PrivateRoute from "./PrivateRoute";
 
 // ---- LAYOUTS ----
 function MainLayout() {
@@ -53,11 +54,46 @@ function App() {
 
       {/* Default Main Layout */}
       <Route element={<MainLayout />}>
-        <Route path="/" element={<Home />} />
-        <Route path="/r/:subredditId" element={<Subreddit />} />
-        <Route path="/create" element={<CreatePost />} />
-        <Route path="/new-subreddit" element={<NewSubreddit />} />
-        <Route path="/profile" element={<Profile />} />
+        <Route
+          path="/"
+          element={
+            <PrivateRoute>
+              <Home />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/r/:subredditId"
+          element={
+            <PrivateRoute>
+              <Subreddit />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/create"
+          element={
+            <PrivateRoute>
+              <CreatePost />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/new-subreddit"
+          element={
+            <PrivateRoute>
+              <NewSubreddit />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/profile"
+          element={
+            <PrivateRoute>
+              <Profile />
+            </PrivateRoute>
+          }
+        />
       </Route>
     </Routes>
   );
