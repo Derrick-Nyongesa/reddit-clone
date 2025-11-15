@@ -1,7 +1,8 @@
 :root {
-  --primary: #fa2851; /* pink-red */
-  --accent: #ffc107; /* amber */
-  --dark: #202020; /* near-black */
+  --primary: #ff4500;
+  --secondary: #fa2851;
+  --accent: #ffc107;
+  --dark: #202020;
   --white: #ffffff;
   --muted: #f4f5f7;
   --card-shadow: rgba(32, 32, 32, 0.06);
@@ -267,4 +268,95 @@ a {
   .search {
     width: 100%;
   }
+}
+
+/* AUTH PAGE */
+.auth-page {
+  min-height: calc(100vh - 120px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 420px;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.02),
+    rgba(255, 255, 255, 0.01)
+  );
+  border-radius: 12px;
+  padding: 28px;
+  box-shadow: 0 18px 60px rgba(2, 6, 23, 0.6);
+  text-align: center;
+}
+
+.auth-logo {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 12px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(140deg, var(--accent), var(--accent-2));
+  color: #041627;
+  font-weight: 800;
+  font-size: 20px;
+}
+
+.auth-title {
+  margin: 8px 0;
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--accent);
+}
+
+.auth-sub {
+  margin: 0 0 18px;
+  color: var(--dark);
+  font-size: 13px;
+}
+
+/* Google button */
+.google-btn {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: none;
+  font-weight: 700;
+  cursor: pointer;
+  background: var(--primary);
+  color: var(--white);
+  box-shadow: 0 8px 28px rgba(124, 92, 255, 0.08);
+  transition: transform 0.08s ease, box-shadow 0.12s ease;
+}
+
+.google-btn:active {
+  transform: translateY(1px);
+}
+
+/* small error message */
+.auth-error {
+  margin-top: 12px;
+  color: #ffb4b4;
+  font-size: 13px;
+}
+
+/* small info message when already signed in */
+.auth-info {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.error-btn {
+  background: linear-gradient(90deg, #ea0000, #ff4d4d);
+  color: #eaf2ff;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  padding: 8px 12px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 600;
 }

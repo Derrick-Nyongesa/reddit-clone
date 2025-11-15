@@ -3,6 +3,7 @@ import { googleProvider, auth } from "../firebase";
 import { signInWithPopup } from "firebase/auth";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { FaRedditAlien } from "react-icons/fa";
 
 function Authentication() {
   const { user } = useAuth();
@@ -34,6 +35,9 @@ function Authentication() {
   return (
     <div className="auth-page">
       <div className="auth-card">
+        <div className="auth-logo">
+          <FaRedditAlien size={48} color="#ff4500" />
+        </div>
         <h1 className="auth-title">Sign In</h1>
         <p className="auth-sub">
           This application is a fully-functional Reddit-inspired web platform
