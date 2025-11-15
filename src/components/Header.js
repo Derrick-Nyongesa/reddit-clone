@@ -50,17 +50,16 @@ function Header() {
       <input className="search" placeholder="Search posts or subreddits..." />
 
       <div className="nav-links">
-        <Link to="/create" className="link-btn btn-ghost">
+        <Link
+          to="/create"
+          className="btn-ghost"
+          style={{ backgroundColor: "#ff4500" }}
+        >
           <FaPlus style={{ marginRight: 6 }} />
           New Post
         </Link>
-        <Link to="/profile" className="link-btn">
-          {user && (
-            // non-clickable user display, keep same nav-btn styles
-            <div className="nav-btn" title={displayNameOrEmail}>
-              {displayNameOrEmail}
-            </div>
-          )}
+        <Link to="/profile" className="nav-btn">
+          {user && <div title={displayNameOrEmail}>{displayNameOrEmail}</div>}
         </Link>
         {user && (
           <button
