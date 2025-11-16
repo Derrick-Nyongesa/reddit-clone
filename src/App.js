@@ -20,15 +20,6 @@ function MainLayout() {
         <main className="main">
           <Outlet />
         </main>
-
-        <aside className="card">
-          <h4>Your Subscriptions</h4>
-          <div style={{ marginTop: 8 }}>
-            <Link to="/new-subreddit" className="link-btn">
-              Create Subreddit
-            </Link>
-          </div>
-        </aside>
       </div>
     </div>
   );
