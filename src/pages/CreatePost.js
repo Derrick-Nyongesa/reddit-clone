@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useData } from "../context/DataContext";
 
@@ -6,15 +6,28 @@ function CreatePost() {
   const { subreddits, createPost } = useData();
   const [title, setTitle] = useState("");
   const [url, setUrl] = useState("");
-  const [subreddit, setSubreddit] = useState(subreddits[0]?.id || "");
+  const [subreddit, setSubreddit] = useState("");
   const [type, setType] = useState("link");
+  const [text, setText] = useState("");
   const navigate = useNavigate();
 
-  function submit(e) {
+  useEffect(() => {
+    if (subreddits.length && !subreddit) setSubreddit(subreddits[0].id);
+  }, [subreddits, subreddit]);
+
+  async function submit(e) {
     e.preventDefault();
-    if (!title || !url) return alert("Please add a title and a url or image");
-    createPost({ title, url, subreddit, type });
-    navigate("/");
+    if (!title) return alert("Please add a title");
+    if ((type === "link" || type === "image") && !url)
+      return alert("Please add a url for link or image posts");
+
+    try {
+      const sanitizedSub = subreddit.replace(/^r\//i, "");
+      await createPost({ title, url, subreddit, type, text });
+      navigate("/");
+    } catch (err) {
+      alert(err.message || "Failed to create post");
+    }
   }
 
   return (
@@ -33,14 +46,43 @@ function CreatePost() {
             onChange={(e) => setTitle(e.target.value)}
           />
         </div>
+
         <div className="form-row">
-          <label>URL or Image</label>
-          <input
+          <label>Type</label>
+          <select
             className="input"
-            value={url}
-            onChange={(e) => setUrl(e.target.value)}
-          />
+            value={type}
+            onChange={(e) => setType(e.target.value)}
+          >
+            <option value="link">Link</option>
+            <option value="image">Image</option>
+            <option value="text">Text</option>
+          </select>
         </div>
+
+        {(type === "link" || type === "image") && (
+          <div className="form-row">
+            <label>URL or Image</label>
+            <input
+              className="input"
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+            />
+          </div>
+        )}
+
+        {type === "text" && (
+          <div className="form-row">
+            <label>Text</label>
+            <textarea
+              className="input"
+              rows={6}
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+            />
+          </div>
+        )}
+
         <div className="form-row">
           <label>Subreddit</label>
           <select
@@ -55,17 +97,7 @@ function CreatePost() {
             ))}
           </select>
         </div>
-        <div className="form-row">
-          <label>Type</label>
-          <select
-            className="input"
-            value={type}
-            onChange={(e) => setType(e.target.value)}
-          >
-            <option value="link">Link</option>
-            <option value="image">Image</option>
-          </select>
-        </div>
+
         <div>
           <button className="btn btn-primary" type="submit">
             Post

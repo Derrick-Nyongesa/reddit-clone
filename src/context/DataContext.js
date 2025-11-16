@@ -1,128 +1,215 @@
 import { createContext, useContext, useEffect, useState } from "react";
-import { uid, now } from "../utils/helpers";
+import { useAuth } from "./AuthContext";
+import { db, serverTimestamp } from "../firebase";
+import {
+  collection,
+  doc,
+  addDoc,
+  setDoc,
+  updateDoc,
+  onSnapshot,
+  query,
+  orderBy,
+  runTransaction,
+  arrayUnion,
+  arrayRemove,
+  getDoc,
+} from "firebase/firestore";
 
 const DataContext = createContext();
 
-const INITIAL = {
-  subreddits: [
-    {
-      id: "r/popular",
-      name: "popular",
-      description: "Popular across the site",
-      theme: { color: "#ff4500" },
-    },
-    {
-      id: "r/aww",
-      name: "aww",
-      description: "Cute things",
-      theme: { color: "#00aaff" },
-    },
-    {
-      id: "r/memes",
-      name: "memes",
-      description: "Fresh memes",
-      theme: { color: "#8a2be2" },
-    },
-  ],
-  posts: [
-    {
-      id: uid(),
-      title: "Amazing movie: Inception",
-      url: "https://www.imdb.com/title/tt1375666/",
-      subreddit: "r/popular",
-      author: "sys",
-      votes: 24,
-      voted: null,
-      created_at: now(),
-      type: "link",
-    },
-    {
-      id: uid(),
-      title: "Cute puppy meme",
-      url: "https://i.imgur.com/puppy.jpg",
-      subreddit: "r/aww",
-      author: "sys",
-      votes: 78,
-      voted: null,
-      created_at: now(),
-      type: "image",
-    },
-  ],
-  subscriptions: ["r/popular"],
-};
-
 export function DataProvider({ children }) {
-  const [data, setData] = useState(() => {
-    try {
-      const raw = localStorage.getItem("reddit_clone_v1");
-      return raw ? JSON.parse(raw) : INITIAL;
-    } catch (e) {
-      return INITIAL;
-    }
-  });
+  const { user } = useAuth();
+  const [subreddits, setSubreddits] = useState([]);
+  const [posts, setPosts] = useState([]);
+  const [subscriptions, setSubscriptions] = useState([]);
+  const [loading, setLoading] = useState(true);
 
+  // Ensure user doc exists and listen to user's subscriptions
   useEffect(() => {
-    localStorage.setItem("reddit_clone_v1", JSON.stringify(data));
-  }, [data]);
+    if (!user) {
+      setSubscriptions([]);
+      return;
+    }
 
-  function createPost({ title, url, subreddit, type }) {
+    const userRef = doc(db, "users", user.uid);
+
+    (async () => {
+      try {
+        const snap = await getDoc(userRef);
+        if (!snap.exists()) {
+          await setDoc(userRef, {
+            displayName: user.displayName || "",
+            email: user.email || "",
+            subscriptions: [],
+            createdAt: serverTimestamp(),
+          });
+        }
+      } catch (err) {
+        console.error("Failed to ensure user doc:", err);
+      }
+    })();
+
+    const unsub = onSnapshot(userRef, (snap) => {
+      const data = snap.exists() ? snap.data() : null;
+      setSubscriptions(data?.subscriptions || []);
+    });
+
+    return () => unsub();
+  }, [user]);
+
+  // Realtime subreddits
+  useEffect(() => {
+    const q = query(collection(db, "subreddits"));
+    const unsub = onSnapshot(q, (snap) => {
+      const arr = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      setSubreddits(arr);
+    });
+    return () => unsub();
+  }, []);
+
+  // Realtime posts ordered newest first
+  useEffect(() => {
+    const q = query(collection(db, "posts"), orderBy("createdAt", "desc"));
+    const unsub = onSnapshot(q, (snap) => {
+      const arr = snap.docs.map((d) => {
+        const data = d.data();
+        return {
+          id: d.id,
+          ...data,
+        };
+      });
+      setPosts(arr);
+      setLoading(false);
+    });
+    return () => unsub();
+  }, []);
+
+  // Create a post (text, link or image)
+  async function createPost({
+    title,
+    url = "",
+    subreddit,
+    type = "link",
+    text = "",
+  }) {
+    if (!user) throw new Error("Not authenticated");
     const post = {
-      id: uid(),
       title,
       url,
-      subreddit,
-      author: "anonymous",
+      text,
+      subreddit, // doc id like 'r/memes'
+      authorId: user.uid,
+      author: user.displayName || user.email || "anonymous",
       votes: 0,
-      voted: null,
-      created_at: now(),
+      votesBy: {}, // map userId -> 1 or -1
       type,
+      createdAt: serverTimestamp(),
     };
-    setData((d) => ({ ...d, posts: [post, ...d.posts] }));
+    await addDoc(collection(db, "posts"), post);
   }
 
-  function vote(postId, dir) {
-    setData((d) => ({
-      ...d,
-      posts: d.posts.map((p) => {
-        if (p.id !== postId) return p;
-        // toggle behavior
-        const prev = p.voted;
-        let votes = p.votes;
-        if (prev === dir) {
-          // undo
-          votes += dir === "up" ? -1 : 1;
-          return { ...p, votes, voted: null };
-        }
-        // if switching
-        if (prev && prev !== dir) votes += dir === "up" ? 2 : -2;
-        else votes += dir === "up" ? 1 : -1;
-        return { ...p, votes, voted: dir };
-      }),
-    }));
-  }
+  // Create subreddit
+  async function createSubreddit({
+    name,
+    description = "",
+    theme = { color: "#ff4500" },
+  }) {
+    if (!user) throw new Error("Not authenticated");
 
-  function createSubreddit({ name, description, theme }) {
-    const id = `r/${name}`;
-    const subreddit = { id, name, description, theme };
-    setData((d) => ({
-      ...d,
-      subreddits: [subreddit, ...d.subreddits],
-      subscriptions: [...d.subscriptions, id],
-    }));
-  }
+    // sanitize input: remove leading "r/" if present and spaces
+    const sanitized = name.replace(/^r\//i, "").replace(/\s+/g, "");
+    const docId = sanitized; // <-- single segment, safe for Firestore doc id
+    const subRef = doc(db, "subreddits", docId);
 
-  function toggleSubscription(subId) {
-    setData((d) => {
-      const subs = d.subscriptions.includes(subId)
-        ? d.subscriptions.filter((s) => s !== subId)
-        : [...d.subscriptions, subId];
-      return { ...d, subscriptions: subs };
+    await setDoc(subRef, {
+      title: sanitized,
+      name: sanitized,
+      description,
+      theme,
+      members: [user.uid],
+      createdAt: serverTimestamp(),
     });
+
+    // store subscription value as 'r/<name>' so your routes and posts can keep same format
+    const routeId = `r/${sanitized}`;
+    const userRef = doc(db, "users", user.uid);
+    await updateDoc(userRef, { subscriptions: arrayUnion(routeId) });
   }
+
+  // Toggle subscription (join / leave)
+  async function toggleSubscription(subId) {
+    if (!user) throw new Error("Not authenticated");
+    const subRef = doc(db, "subreddits", subId);
+    const userRef = doc(db, "users", user.uid);
+    const joined = subscriptions.includes(subId);
+
+    if (joined) {
+      await updateDoc(subRef, { members: arrayRemove(user.uid) });
+      await updateDoc(userRef, { subscriptions: arrayRemove(subId) });
+    } else {
+      await updateDoc(subRef, { members: arrayUnion(user.uid) });
+      await updateDoc(userRef, { subscriptions: arrayUnion(subId) });
+    }
+  }
+
+  // Vote transaction: dir is "up" or "down"
+  async function vote(postId, dir) {
+    if (!user) throw new Error("Not authenticated");
+    const postRef = doc(db, "posts", postId);
+
+    try {
+      await runTransaction(db, async (t) => {
+        const snap = await t.get(postRef);
+        if (!snap.exists()) throw new Error("Post not found");
+        const data = snap.data();
+        const votesBy = data.votesBy || {};
+        const prev = votesBy[user.uid] || 0; // 1, -1 or 0
+        const direction = dir === "up" ? 1 : -1;
+        let newVotes = data.votes || 0;
+
+        // undo same vote
+        if (prev === direction) {
+          newVotes = newVotes - direction;
+          // set user vote to 0 (you can change to delete the field if you add deleteField)
+          t.update(postRef, { votes: newVotes, [`votesBy.${user.uid}`]: 0 });
+          return;
+        }
+
+        // switching vote (e.g. up -> down)
+        if (prev !== 0 && prev !== direction) {
+          newVotes = newVotes + direction * 2;
+        } else {
+          newVotes = newVotes + direction;
+        }
+
+        t.update(postRef, {
+          votes: newVotes,
+          [`votesBy.${user.uid}`]: direction,
+        });
+      });
+    } catch (err) {
+      console.error("Vote failed", err);
+    }
+  }
+
+  // Derived feeds
+  const homePosts = posts;
+  const joinedPosts = posts.filter((p) => subscriptions.includes(p.subreddit));
 
   return (
     <DataContext.Provider
-      value={{ ...data, createPost, vote, createSubreddit, toggleSubscription }}
+      value={{
+        posts: homePosts,
+        joinedPosts,
+        subreddits,
+        subscriptions,
+        loading,
+        createPost,
+        vote,
+        createSubreddit,
+        toggleSubscription,
+      }}
     >
       {children}
     </DataContext.Provider>

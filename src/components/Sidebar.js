@@ -1,6 +1,6 @@
 import React from "react";
 import { useData } from "../context/DataContext";
-import Subreddit from "../pages/Subreddit";
+import SubredditList from "./SubredditList";
 import { Link } from "react-router-dom";
 
 function Sidebar() {
@@ -8,18 +8,21 @@ function Sidebar() {
   return (
     <aside className="sidebar card">
       <h4>Subreddits</h4>
-      <Subreddit items={subreddits} />
+      <SubredditList items={subreddits} />
       <div style={{ marginTop: 12 }}>
         <h5>Your Joined</h5>
         {subscriptions.length === 0 ? (
           <div className="card">No subscriptions yet</div>
         ) : (
           <ul>
-            {subscriptions.map((s) => (
-              <li key={s}>
-                <Link to={`/r/${s}`}>{s}</Link>
-              </li>
-            ))}
+            {subscriptions.map((s) => {
+              const nameOnly = (s || "").replace(/^r\//i, "");
+              return (
+                <li key={s}>
+                  <Link to={`/r/${nameOnly}`}>{`r/${nameOnly}`}</Link>
+                </li>
+              );
+            })}
           </ul>
         )}
         <div style={{ marginTop: 8 }}>
