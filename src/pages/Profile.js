@@ -1,44 +1,61 @@
-import { useState, useEffect } from "react";
+import { useMemo } from "react";
 import { useData } from "../context/DataContext";
-import { auth } from "../firebase";
-import { onAuthStateChanged } from "firebase/auth";
+import { useAuth } from "../context/AuthContext";
+import PostCard from "../components/PostCard";
 
 function Profile() {
   const { posts, subscriptions } = useData();
-  const [user, setUser] = useState(null);
+  const { user } = useAuth();
 
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (u) => {
-      setUser(u);
-    });
-    return () => unsubscribe();
-  }, []);
+  // show nothing / loader if auth or posts still loading
+  // if (loading) return <div className="card">Loading...</div>;
+  if (!user)
+    return (
+      <div className="card">
+        <div>Please sign in to view your profile.</div>
+      </div>
+    );
 
-  const displayNameOrEmail = user ? user.displayName || user.email : null;
+  const displayNameOrEmail = user.displayName || user.email || "User";
+
+  // filter posts by authorId (reliable) and sort newest-first
+  const userPosts = useMemo(() => {
+    return posts
+      .filter((p) => p.authorId === user.uid)
+      .sort((a, b) => {
+        const ta = a.createdAt?.toDate
+          ? a.createdAt.toDate().getTime()
+          : new Date(a.createdAt).getTime();
+        const tb = b.createdAt?.toDate
+          ? b.createdAt.toDate().getTime()
+          : new Date(b.createdAt).getTime();
+        return tb - ta;
+      });
+  }, [posts, user]);
 
   return (
     <div>
       <h2>Profile</h2>
+
       <div className="card">
         <div>
           <strong>Username:</strong> {displayNameOrEmail}
         </div>
-        <div>
-          <strong>Joined subs:</strong> {subscriptions.join(", ") || "None"}
+        <div style={{ marginTop: 8 }}>
+          <strong>Joined subs:</strong>{" "}
+          {subscriptions && subscriptions.length > 0
+            ? subscriptions.map((s) => s.replace(/^r\//i, "r/")).join(", ")
+            : "None"}
         </div>
       </div>
 
       <h3 style={{ marginTop: 12 }}>Your posts</h3>
-      {posts.filter((p) => p.author === "anonymous").length === 0 && (
+
+      {userPosts.length === 0 ? (
         <div className="card">You have no posts yet</div>
+      ) : (
+        userPosts.map((p) => <PostCard post={p} key={p.id} />)
       )}
-      {posts
-        .filter((p) => p.author === "anonymous")
-        .map((p) => (
-          <div className="card" key={p.id}>
-            {p.title}
-          </div>
-        ))}
     </div>
   );
 }
