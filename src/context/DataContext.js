@@ -94,11 +94,18 @@ export function DataProvider({ children }) {
     text = "",
   }) {
     if (!user) throw new Error("Not authenticated");
+
+    // normalize subreddit to always store just the doc id (no leading "r/")
+    const sanitizedSub = (subreddit || "")
+      .replace(/^r\//i, "")
+      .replace(/\s+/g, "");
+
     const post = {
       title,
       url,
       text,
-      subreddit, // doc id like 'r/memes'
+      // store normalized doc id (e.g. "memes") — code elsewhere tolerates either form
+      subreddit: sanitizedSub,
       authorId: user.uid,
       author: user.displayName || user.email || "anonymous",
       votes: 0,
@@ -131,7 +138,7 @@ export function DataProvider({ children }) {
       createdAt: serverTimestamp(),
     });
 
-    // store subscription value as 'r/<name>' so your routes and posts can keep same format
+    // store subscription value as 'r/<name>' in user doc (keeps UI consistent)
     const routeId = `r/${sanitized}`;
     const userRef = doc(db, "users", user.uid);
     await updateDoc(userRef, { subscriptions: arrayUnion(routeId) });
@@ -142,14 +149,17 @@ export function DataProvider({ children }) {
     if (!user) throw new Error("Not authenticated");
     const subRef = doc(db, "subreddits", subId);
     const userRef = doc(db, "users", user.uid);
-    const joined = subscriptions.includes(subId);
+
+    // subscriptions in user doc are stored as 'r/<name>' — compute that form
+    const routeId = `r/${subId}`;
+    const joined = subscriptions.includes(routeId);
 
     if (joined) {
       await updateDoc(subRef, { members: arrayRemove(user.uid) });
-      await updateDoc(userRef, { subscriptions: arrayRemove(subId) });
+      await updateDoc(userRef, { subscriptions: arrayRemove(routeId) });
     } else {
       await updateDoc(subRef, { members: arrayUnion(user.uid) });
-      await updateDoc(userRef, { subscriptions: arrayUnion(subId) });
+      await updateDoc(userRef, { subscriptions: arrayUnion(routeId) });
     }
   }
 
@@ -193,9 +203,18 @@ export function DataProvider({ children }) {
     }
   }
 
+  // helper normalizer: remove leading r/ if present
+  const normalize = (s) => (s || "").replace(/^r\//i, "");
+
   // Derived feeds
   const homePosts = posts;
-  const joinedPosts = posts.filter((p) => subscriptions.includes(p.subreddit));
+
+  // Joined posts: match post.subreddit (which we store as doc id like 'memes')
+  // against the user's subscriptions (which are stored as 'r/memes').
+  const joinedPosts = posts.filter((p) => {
+    const postSub = normalize(p.subreddit);
+    return subscriptions.some((s) => normalize(s) === postSub);
+  });
 
   return (
     <DataContext.Provider

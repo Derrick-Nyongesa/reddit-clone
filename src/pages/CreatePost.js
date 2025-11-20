@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useData } from "../context/DataContext";
 
 function CreatePost() {
-  const { subreddits, createPost } = useData();
+  const { subreddits, createPost, subscriptions } = useData();
   const [title, setTitle] = useState("");
   const [url, setUrl] = useState("");
   const [subreddit, setSubreddit] = useState("");
@@ -11,9 +11,21 @@ function CreatePost() {
   const [text, setText] = useState("");
   const navigate = useNavigate();
 
+  // normalize helper
+  const normalize = (s) => (s || "").replace(/^r\//i, "");
+
+  // compute the subreddit objects the user has joined
+  const normalizedSubs = (subscriptions || []).map((s) => normalize(s));
+  const joinedSubreddits = subreddits.filter((s) =>
+    normalizedSubs.includes(normalize(s.id))
+  );
+
+  // pick a default joined subreddit when available
   useEffect(() => {
-    if (subreddits.length && !subreddit) setSubreddit(subreddits[0].id);
-  }, [subreddits, subreddit]);
+    if (joinedSubreddits.length && !subreddit) {
+      setSubreddit(joinedSubreddits[0].id);
+    }
+  }, [joinedSubreddits, subreddit]);
 
   async function submit(e) {
     e.preventDefault();
@@ -22,12 +34,35 @@ function CreatePost() {
       return alert("Please add a url for link or image posts");
 
     try {
-      const sanitizedSub = subreddit.replace(/^r\//i, "");
-      await createPost({ title, url, subreddit, type, text });
+      // ensure we pass normalized subreddit (doc id like 'memes')
+      const sanitizedSub = (subreddit || "")
+        .replace(/^r\//i, "")
+        .replace(/\s+/g, "");
+      await createPost({ title, url, subreddit: sanitizedSub, type, text });
       navigate("/");
     } catch (err) {
-      alert(err.message || "Failed to create post");
+      alert(err?.message || "Failed to create post");
     }
+  }
+
+  // If user hasn't joined any subreddit, hide the form and show a message
+  if (!joinedSubreddits.length) {
+    return (
+      <div>
+        <h2>Create Post</h2>
+        <div className="card">
+          <p>
+            You must join at least one subreddit to create a post.
+            <br />
+            Join a community from the sidebar or{" "}
+            <Link to="/new-subreddit" className="link-btn">
+              create a new subreddit
+            </Link>
+            .
+          </p>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -90,7 +125,7 @@ function CreatePost() {
             value={subreddit}
             onChange={(e) => setSubreddit(e.target.value)}
           >
-            {subreddits.map((s) => (
+            {joinedSubreddits.map((s) => (
               <option value={s.id} key={s.id}>
                 {s.name}
               </option>

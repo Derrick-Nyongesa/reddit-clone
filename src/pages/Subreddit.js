@@ -9,10 +9,19 @@ function Subreddit() {
   const [toggling, setToggling] = useState(false);
 
   const sub = subreddits.find((s) => s.id === subredditId);
+
+  // normalize form comparison: allow either "r/name" or "name"
+  const normalize = (v) => (v || "").replace(/^r\//i, "");
+
+  // related posts: make comparison robust to p.subreddit stored as "r/x" or "x"
   const related = posts.filter(
-    (p) => p.subreddit === subredditId.replace(/^r\//i, "")
+    (p) => normalize(p.subreddit) === normalize(subredditId)
   );
-  const joined = subscriptions.includes(subredditId);
+
+  // check joined status using normalized strings (user.subscriptions store "r/x")
+  const joined = subscriptions.some(
+    (s) => normalize(s) === normalize(subredditId)
+  );
 
   // helper to pick readable text color for header
   const headerTextColor = useMemo(() => {
@@ -90,7 +99,24 @@ function Subreddit() {
       </div>
 
       <div style={{ marginTop: 12 }}>
-        {related.length === 0 ? (
+        {/* If user is not joined, hide posts and show a message with Join button */}
+        {!joined ? (
+          <div className="card">
+            <div style={{ marginBottom: 8 }}>
+              You must join this subreddit to view posts.
+            </div>
+            <div>
+              <button
+                className="btn btn-primary"
+                onClick={handleToggle}
+                disabled={toggling}
+              >
+                {toggling ? "..." : "Join and view posts"}
+              </button>
+            </div>
+          </div>
+        ) : // when joined, show posts (or a "no posts" card)
+        related.length === 0 ? (
           <div className="card">No posts in this subreddit</div>
         ) : (
           related.map((p) => <PostCard post={p} key={p.id} />)

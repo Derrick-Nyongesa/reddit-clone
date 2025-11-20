@@ -3,15 +3,17 @@ import { useData } from "../context/DataContext";
 import PostCard from "../components/PostCard";
 
 function Home() {
-  const { posts } = useData();
+  const { joinedPosts } = useData();
   return (
     <div>
       <h2>Home</h2>
       <div style={{ marginTop: 12 }}>
-        {posts.length === 0 ? (
-          <div className="card">No posts yet</div>
+        {joinedPosts.length === 0 ? (
+          <div className="card">
+            No posts yet — join some subreddits to see posts
+          </div>
         ) : (
-          posts.map((p) => <PostCard post={p} key={p.id} />)
+          joinedPosts.map((p) => <PostCard post={p} key={p.id} />)
         )}
       </div>
     </div>
