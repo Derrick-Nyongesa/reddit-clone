@@ -10,7 +10,12 @@ function PostCard({ post }) {
   const userVote = (post.votesBy && user && post.votesBy[user.uid]) || 0;
   const color = sub?.theme?.color || "#ff4500";
 
+  // disable voting if current user is the post author (or not logged in)
+  const isAuthor = user && post.authorId === user.uid;
+
   function handleVote(dir) {
+    if (!user) return alert("Please sign in to vote");
+    if (isAuthor) return alert("You cannot vote on your own post");
     vote(post.id, dir);
   }
 
@@ -26,7 +31,12 @@ function PostCard({ post }) {
         <div
           className="vote-btn"
           onClick={() => handleVote("up")}
-          style={{ color: userVote === 1 ? color : undefined }}
+          style={{
+            color: userVote === 1 ? color : undefined,
+            cursor: isAuthor ? "not-allowed" : undefined,
+            opacity: isAuthor ? 0.5 : 1,
+          }}
+          title={isAuthor ? "You cannot vote on your own post" : "Upvote"}
         >
           <FaArrowUp />
         </div>
@@ -34,7 +44,12 @@ function PostCard({ post }) {
         <div
           className="vote-btn"
           onClick={() => handleVote("down")}
-          style={{ color: userVote === -1 ? color : undefined }}
+          style={{
+            color: userVote === -1 ? color : undefined,
+            cursor: isAuthor ? "not-allowed" : undefined,
+            opacity: isAuthor ? 0.5 : 1,
+          }}
+          title={isAuthor ? "You cannot vote on your own post" : "Downvote"}
         >
           <FaArrowDown />
         </div>

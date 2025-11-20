@@ -164,6 +164,7 @@ export function DataProvider({ children }) {
   }
 
   // Vote transaction: dir is "up" or "down"
+  // Vote transaction: dir is "up" or "down"
   async function vote(postId, dir) {
     if (!user) throw new Error("Not authenticated");
     const postRef = doc(db, "posts", postId);
@@ -173,6 +174,12 @@ export function DataProvider({ children }) {
         const snap = await t.get(postRef);
         if (!snap.exists()) throw new Error("Post not found");
         const data = snap.data();
+
+        // server-side guard: authors cannot vote on their own posts
+        if (data.authorId === user.uid) {
+          throw new Error("Authors cannot vote on their own posts");
+        }
+
         const votesBy = data.votesBy || {};
         const prev = votesBy[user.uid] || 0; // 1, -1 or 0
         const direction = dir === "up" ? 1 : -1;
@@ -181,7 +188,7 @@ export function DataProvider({ children }) {
         // undo same vote
         if (prev === direction) {
           newVotes = newVotes - direction;
-          // set user vote to 0 (you can change to delete the field if you add deleteField)
+          // set user vote to 0 (alternatively delete the field)
           t.update(postRef, { votes: newVotes, [`votesBy.${user.uid}`]: 0 });
           return;
         }
@@ -199,6 +206,11 @@ export function DataProvider({ children }) {
         });
       });
     } catch (err) {
+      // surface author-block message gracefully
+      if (err?.message?.includes("Authors cannot vote")) {
+        console.warn(err.message);
+        return;
+      }
       console.error("Vote failed", err);
     }
   }
