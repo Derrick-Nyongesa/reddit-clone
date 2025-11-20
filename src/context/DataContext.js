@@ -129,13 +129,34 @@ export function DataProvider({ children }) {
     const docId = sanitized; // <-- single segment, safe for Firestore doc id
     const subRef = doc(db, "subreddits", docId);
 
-    await setDoc(subRef, {
+    // Prepare the subreddit object we'll write to Firestore and also use locally
+    const subPayload = {
       title: sanitized,
       name: sanitized,
       description,
       theme,
       members: [user.uid],
       createdAt: serverTimestamp(),
+    };
+
+    // Write to Firestore
+    await setDoc(subRef, subPayload);
+
+    // Locally add the subreddit immediately so routes that navigate to it see it
+    setSubreddits((prev) => {
+      // if already present (rare, but safe), don't duplicate
+      if (prev.some((s) => s.id === docId)) return prev;
+      // create a lightweight local object — createdAt is a local Date to make UI readable
+      const localSub = {
+        id: docId,
+        title: sanitized,
+        name: sanitized,
+        description,
+        theme,
+        members: [user.uid],
+        createdAt: new Date().toISOString(),
+      };
+      return [localSub, ...prev];
     });
 
     // store subscription value as 'r/<name>' in user doc (keeps UI consistent)
