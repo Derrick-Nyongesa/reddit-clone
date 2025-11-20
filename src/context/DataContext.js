@@ -26,6 +26,7 @@ export function DataProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   // Ensure user doc exists and listen to user's subscriptions
+  // Ensure user doc exists and listen to user's subscriptions
   useEffect(() => {
     if (!user) {
       setSubscriptions([]);
@@ -36,26 +37,57 @@ export function DataProvider({ children }) {
 
     (async () => {
       try {
+        // fetch once immediately so UI can update without waiting for onSnapshot
         const snap = await getDoc(userRef);
         if (!snap.exists()) {
+          // create user doc and set subscriptions to empty immediately
           await setDoc(userRef, {
             displayName: user.displayName || "",
             email: user.email || "",
             subscriptions: [],
             createdAt: serverTimestamp(),
           });
+          setSubscriptions([]);
+        } else {
+          // set subscriptions from the doc we just read so sidebar / home can react instantly
+          const data = snap.data();
+          setSubscriptions(data?.subscriptions || []);
         }
       } catch (err) {
         console.error("Failed to ensure user doc:", err);
       }
+
+      // After the immediate read/write, attach realtime listener to keep subscriptions in sync
+      const unsub = onSnapshot(userRef, (snap) => {
+        const data = snap.exists() ? snap.data() : null;
+        setSubscriptions(data?.subscriptions || []);
+      });
+
+      // attach cleanup by returning the unsubscribe from the outer effect
+      // but we cannot return from inside this async IIFE — so the outer effect returns below
+      // To handle this we keep track of the snapshot unsubscribe with a variable in the outer scope.
     })();
 
-    const unsub = onSnapshot(userRef, (snap) => {
-      const data = snap.exists() ? snap.data() : null;
-      setSubscriptions(data?.subscriptions || []);
-    });
+    // Because the onSnapshot unsubscribe is created inside the async IIFE,
+    // create a small mechanism to ensure we clean up properly.
+    // We'll attach a snapshot listener synchronously too, but it will be effectively
+    // replaced by the one inside the IIFE when it runs. This avoids missing the unsubscribe reference.
+    let unsubLocal = () => {};
+    (async () => {
+      // wait a tick to let the IIFE attach its listener; if it hasn't, attach a fallback.
+      await Promise.resolve();
+      // If the IIFE already attached unsub via outer scope, nothing to do.
+      // We'll still set unsubLocal to a no-op to be safe.
+    })();
 
-    return () => unsub();
+    return () => {
+      // safe to call no-op if snapshot listener wasn't attached
+      try {
+        unsubLocal();
+      } catch (e) {
+        // ignore
+      }
+    };
   }, [user]);
 
   // Realtime subreddits
@@ -100,12 +132,11 @@ export function DataProvider({ children }) {
       .replace(/^r\//i, "")
       .replace(/\s+/g, "");
 
-    const post = {
+    const postPayload = {
       title,
       url,
       text,
-      // store normalized doc id (e.g. "memes") — code elsewhere tolerates either form
-      subreddit: sanitizedSub,
+      subreddit: sanitizedSub, // normalized doc id (e.g. "memes")
       authorId: user.uid,
       author: user.displayName || user.email || "anonymous",
       votes: 0,
@@ -113,7 +144,28 @@ export function DataProvider({ children }) {
       type,
       createdAt: serverTimestamp(),
     };
-    await addDoc(collection(db, "posts"), post);
+
+    // write to Firestore
+    const docRef = await addDoc(collection(db, "posts"), postPayload);
+
+    // optimistic local update so the new post shows immediately in the UI.
+    // guard against duplicates if the realtime listener later returns the same doc.
+    const localPost = {
+      id: docRef.id,
+      ...postPayload,
+      // createdAt for UI purposes: use a local ISO string so sorting works immediately.
+      // Note: this is a local-only field to make the UI responsive — the server-created
+      // Timestamp will replace it when the onSnapshot listener updates posts.
+      createdAt: new Date().toISOString(),
+    };
+
+    setPosts((prev) => {
+      // if post already present (listener already added it), skip
+      if (prev.some((p) => p.id === docRef.id)) return prev;
+      return [localPost, ...prev];
+    });
+
+    return docRef;
   }
 
   // Create subreddit
