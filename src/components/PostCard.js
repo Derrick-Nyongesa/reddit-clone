@@ -1,5 +1,5 @@
 import React from "react";
-import { FaArrowUp, FaArrowDown } from "react-icons/fa";
+import { FaThumbsUp, FaThumbsDown } from "react-icons/fa";
 import { useData } from "../context/DataContext";
 import { useAuth } from "../context/AuthContext";
 
@@ -38,20 +38,20 @@ function PostCard({ post }) {
           }}
           title={isAuthor ? "You cannot vote on your own post" : "Upvote"}
         >
-          <FaArrowUp />
+          <FaThumbsUp />
         </div>
         <div style={{ fontWeight: 700 }}>{post.votes}</div>
         <div
           className="vote-btn"
           onClick={() => handleVote("down")}
           style={{
-            color: userVote === -1 ? color : undefined,
+            color: userVote === -1 ? "#e30b0b" : undefined,
             cursor: isAuthor ? "not-allowed" : undefined,
             opacity: isAuthor ? 0.5 : 1,
           }}
           title={isAuthor ? "You cannot vote on your own post" : "Downvote"}
         >
-          <FaArrowDown />
+          <FaThumbsDown />
         </div>
       </div>
       <div className="post-body">
