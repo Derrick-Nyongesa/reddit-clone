@@ -32,7 +32,7 @@ export function DataProvider({ children }) {
       return;
     }
 
-    const userRef = doc(db, "users", user.uid);
+    const userRef = doc(db, "reddit-users", user.uid);
 
     (async () => {
       try {
@@ -140,7 +140,7 @@ export function DataProvider({ children }) {
 
     // store subscription value as 'r/<name>' in user doc (keeps UI consistent)
     const routeId = `r/${sanitized}`;
-    const userRef = doc(db, "users", user.uid);
+    const userRef = doc(db, "reddit-users", user.uid);
     await updateDoc(userRef, { subscriptions: arrayUnion(routeId) });
   }
 
@@ -148,7 +148,7 @@ export function DataProvider({ children }) {
   async function toggleSubscription(subId) {
     if (!user) throw new Error("Not authenticated");
     const subRef = doc(db, "subreddits", subId);
-    const userRef = doc(db, "users", user.uid);
+    const userRef = doc(db, "reddit-users", user.uid);
 
     // subscriptions in user doc are stored as 'r/<name>' — compute that form
     const routeId = `r/${subId}`;
