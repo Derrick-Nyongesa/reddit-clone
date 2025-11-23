@@ -1,70 +1,197 @@
-# Getting Started with Create React App
+# Reddit Clone — Front Page of the Internet
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+> A lightweight, reactive Reddit-inspired web app built with React + Firebase. Browse communities, create subreddits, post links/images/text, vote, and follow communities in real-time.
 
-## Available Scripts
+---
 
-In the project directory, you can run:
+## 🌐 Overview
 
-### `npm start`
+This application is a fully-functional Reddit-inspired web platform built with **React**, designed to allow users to browse, create, and interact with community-driven content. It focuses on simplicity, performance, and a clean UI while providing the core features found in modern content-sharing platforms. All realtime data (subreddits, posts, subscriptions) is powered by **Firebase Firestore** and authentication is handled via **Firebase Auth** (Google provider in the starter).
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+## ✨ Key Features
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+- Home feed of posts (real-time)
+- Create text, link, or image posts
+- Create and customize subreddits (theme color, description)
+- Join / leave subreddits
+- Personalized feed of posts from joined subreddits
+- Upvote / downvote posts (authors cannot vote on their own posts)
+- Optimistic UI updates for faster UX (new posts / subreddits appear instantly)
+- Search posts (client-side search across title, body, author, subreddit)
+- Profile page showing user's posts and joined communities
 
-### `npm test`
+## 🧭 User Stories
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+1. A user can view posts on the home page.
+2. A user can create their own posts (text / link / image).
+3. A user can follow (join) subreddits and see a personalized feed.
+4. A user can upvote or downvote a post (except their own).
+5. A user can create their own subreddit to host content about an interest.
+6. A user can browse and list joined subreddits.
+7. A user can customize a subreddit theme color.
 
-### `npm run build`
+---
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+## 🛠 Tech Stack
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+- React (Create React App)
+- React Router
+- Firebase Auth (Google, email, etc.)
+- Cloud Firestore (realtime listeners)
+- React Context for global data
+- react-icons for UI icons
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+---
 
-### `npm run eject`
+## 🚀 Quick Start
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+### Prerequisites
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+- Node.js (16+ recommended)
+- npm or yarn
+- A Firebase project with Firestore and Auth enabled
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+### 1. Clone
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+```bash
+git clone https://github.com/Derrick-Nyongesa/reddit-clone.git
+cd <your-repo>
+```
 
-## Learn More
+### 2. Install
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+```bash
+npm install
+# or
+# yarn
+```
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+### 3. Firebase configuration
 
-### Code Splitting
+Create a `.env` (or use your environment system) in project root and add your Firebase config values:
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+```env
+REACT_APP_FIREBASE_API_KEY=your_api_key
+REACT_APP_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
+REACT_APP_FIREBASE_PROJECT_ID=your_project_id
+REACT_APP_FIREBASE_STORAGE_BUCKET=your_project.appspot.com
+REACT_APP_FIREBASE_MESSAGING_SENDER_ID=xxxxxxx
+REACT_APP_FIREBASE_APP_ID=1:xxxxx:web:xxxx
+REACT_APP_FIREBASE_MEASUREMENT_ID=G-XXXX
+```
 
-### Analyzing the Bundle Size
+> The app expects the firebase config to be consumed by `src/firebase.js` using `process.env.REACT_APP_*` variables.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+### 4. Run locally
 
-### Making a Progressive Web App
+```bash
+npm start
+# open http://localhost:3000
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+### Available scripts
 
-### Advanced Configuration
+- `npm start` — run in development mode
+- `npm test` — run test watcher
+- `npm run build` — build production bundle
+- `npm run eject` — eject CRA configuration (one-way)
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+---
 
-### Deployment
+## 🔐 Recommended Firestore Rules (development)
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+> **Warning:** The snippet below is intended for development. Tighten rules before production.
 
-### `npm run build` fails to minify
+```js
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // allow authenticated users to read collections
+    match /subreddits/{subId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null;
+      // restrict updates to members only (example)
+      allow update: if request.auth != null && request.resource.data.members is list;
+    }
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+    match /posts/{postId} {
+      allow read: if request.auth != null;
+      // create only when authorId matches requester
+      allow create: if request.auth != null && request.resource.data.authorId == request.auth.uid;
+      // update/delete only by author
+      allow update, delete: if request.auth != null && resource.data.authorId == request.auth.uid;
+    }
+
+    match /reddit-users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // fallback (restrict) — remove or adapt as needed
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
+```
+
+---
+
+## 🧩 Project Structure (important files)
+
+```
+src/
+├─ components/
+│  ├─ Header.jsx
+│  ├─ Sidebar.jsx
+│  ├─ PostCard.jsx
+│  └─ SubredditList.jsx
+├─ pages/
+│  ├─ Home.jsx
+│  ├─ Subreddit.jsx
+│  ├─ CreatePost.jsx
+│  ├─ NewSubreddit.jsx
+│  ├─ Profile.jsx
+│  └─ Search.jsx
+├─ context/
+│  ├─ AuthContext.js   # firebase auth listener
+│  └─ DataContext.js   # all Firestore listeners and CRUD helpers
+├─ firebase.js
+├─ helpers.js
+└─ App.js
+```
+
+---
+
+## ✅ Implementation Notes / Tips
+
+- The app uses **realtime Firestore listeners** (`onSnapshot`) to keep subreddits, posts, and user subscriptions in sync.
+- The `DataContext` includes guards to wait for auth initialization before attaching listeners to avoid permission errors on sign-up/login.
+- Posts and subreddits are optimistically added to local state immediately on create to give snappy UX. Real server data reconciles shortly after.
+- Subscriptions are stored on user documents as `r/<subname>` to keep route compatibility (e.g. `r/memes`). Post documents store `subreddit` as the normalized doc id (e.g. `memes`).
+
+---
+
+## 🧪 Testing & Debugging
+
+- Use the Browser DevTools Console to observe debug logs emitted from `DataContext` (e.g. `"[DataContext] posts snapshot:"`).
+- If you see `Missing or insufficient permissions`, verify Firestore rules and that the Firebase config points to the correct project.
+
+---
+
+## 🤝 Contributing
+
+Contributions welcome! Please open issues or PRs for bug fixes and enhancements. Keep changes small and include a short description & testing steps.
+
+---
+
+## 📄 License
+
+MIT — feel free to reuse and adapt this project.
+
+---
+
+## Contact
+
+Questions or feature requests? Open an issue or reach out via your repository platform.
+
+_Enjoy building!_ 🚀
