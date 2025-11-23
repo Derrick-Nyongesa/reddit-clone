@@ -7,6 +7,7 @@ import Profile from "./pages/Profile";
 import Header from "./components/Header";
 import Sidebar from "./components/Sidebar";
 import Authentication from "./pages/Authentication";
+import Search from "./pages/Search";
 import PrivateRoute from "./PrivateRoute";
 
 // ---- LAYOUTS ----
@@ -82,6 +83,14 @@ function App() {
           element={
             <PrivateRoute>
               <Profile />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/search"
+          element={
+            <PrivateRoute>
+              <Search />
             </PrivateRoute>
           }
         />
