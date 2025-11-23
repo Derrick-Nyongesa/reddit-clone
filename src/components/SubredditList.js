@@ -6,8 +6,19 @@ function SubredditList({ items = [] }) {
     <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
       {items.map((s) => (
         <div className="subreddit-item card" key={s.id}>
-          <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-            <div className="subreddit-badge">{s.name}</div>
+          <div
+            style={{
+              display: "flex",
+              gap: 10,
+              alignItems: "center",
+            }}
+          >
+            <div
+              className="subreddit-badge"
+              style={{ background: s.theme?.color, color: "#fff" }}
+            >
+              {s.name}
+            </div>
             <div style={{ fontSize: 13, color: "#444" }}>{s.description}</div>
           </div>
           <div>
